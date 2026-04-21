@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Medevia | Buscador de evidencia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body data-page="inicio">
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href="index.html" aria-label="Ir al inicio de Medevia">
+          <span class="brand-mark">M</span>
+          <span class="brand-copy">
+            <strong>Medevia</strong>
+            <span>Buscador de evidencia en terapias</span>
+          </span>
+        </a>
+
+        <nav class="site-nav" aria-label="Navegación principal">
+          <a class="nav-link nav-link--active" href="index.html">Inicio</a>
+          <a class="nav-link" href="articulos.html">Artículos</a>
+          <a class="nav-link" href="metodologia.html">Metodología</a>
+          <a class="nav-link" href="contacto.html">Contacto</a>
+        </nav>
+      </header>
+
+      <main>
+        <section class="hero hero--home">
+          <div class="hero__eyebrow">Base MedTer Light</div>
+          <h1>Busca evidencia académica sobre terapias de forma clara.</h1>
+          <p class="hero__lead">
+            Consulta términos, revisa definiciones, detecta riesgos y ubica revisiones
+            sistemáticas vinculadas a PubMed desde una sola interfaz.
+          </p>
+        </section>
+
+        <section class="search-panel" aria-labelledby="buscador-titulo">
+          <div class="search-panel__glow search-panel__glow--one"></div>
+          <div class="search-panel__glow search-panel__glow--two"></div>
+
+          <div class="section-heading">
+            <h2 id="buscador-titulo">Buscador principal</h2>
+            <p>
+              Busca por nombre, otros nombres o por la descripción breve de cada terapia.
+            </p>
+          </div>
+
+          <form id="search-form" class="search-form" autocomplete="off">
+            <label class="search-bar" for="search-input">
+              <span class="search-bar__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M10.5 18a7.5 7.5 0 1 1 0-15a7.5 7.5 0 0 1 0 15ZM21 21l-5.2-5.2"
+                    stroke="currentColor"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.8"
+                  />
+                </svg>
+              </span>
+              <input
+                id="search-input"
+                name="query"
+                type="search"
+                placeholder='Ej. "acupuntura", "fitoterapia", "dolor" o "ansiedad"'
+              />
+            </label>
+
+            <div class="search-actions">
+              <button type="submit" class="button button--primary">Buscar</button>
+              <button type="button" id="clear-button" class="button button--ghost">
+                Limpiar
+              </button>
+            </div>
+
+            <div class="filters-grid">
+              <label class="filter-card" for="min-year">
+                <span class="filter-card__label">Año mínimo</span>
+                <input id="min-year" name="minYear" type="number" inputmode="numeric" placeholder="Ej. 2018" />
+              </label>
+
+              <label class="filter-card" for="max-year">
+                <span class="filter-card__label">Año máximo</span>
+                <input id="max-year" name="maxYear" type="number" inputmode="numeric" placeholder="Ej. 2026" />
+              </label>
+
+              <label class="filter-card" for="results-limit">
+                <span class="filter-card__label">Resultados por página</span>
+                <select id="results-limit" name="limit">
+                  <option value="6">6</option>
+                  <option value="12" selected>12</option>
+                  <option value="24">24</option>
+                  <option value="48">48</option>
+                </select>
+              </label>
+            </div>
+          </form>
+
+          <div class="search-status" role="status" aria-live="polite">
+            <p id="results-summary">Cargando base de datos…</p>
+            <span id="data-source-badge" class="source-badge">Preparando fuente</span>
+          </div>
+        </section>
+
+        <section class="results-section" aria-labelledby="resultados-titulo">
+          <div class="section-heading section-heading--tight">
+            <h2 id="resultados-titulo">Resultados</h2>
+            <p id="results-meta">Las fichas se ordenan por año de revisión más reciente.</p>
+          </div>
+
+          <div id="results-container" class="results-grid"></div>
+          <div id="empty-state" class="empty-state" hidden>
+            <h3>Sin coincidencias</h3>
+            <p>Prueba con otro término o ajusta el rango de años.</p>
+          </div>
+        </section>
+
+        <section class="info-grid" aria-label="Información complementaria">
+          <article class="info-card">
+            <div class="info-card__eyebrow">Metodología</div>
+            <h2>Cómo se construye cada ficha</h2>
+            <p>
+              Cada entrada consolida nombre, sinónimos, una descripción breve, riesgos
+              asociados, termómetro de evidencia, volumen de artículos y revisiones
+              sistemáticas, además del enlace a PubMed cuando existe.
+            </p>
+            <a class="text-link" href="metodologia.html">Ver metodología completa</a>
+          </article>
+
+          <article class="info-card">
+            <div class="info-card__eyebrow">Contacto</div>
+            <h2>Canales del proyecto</h2>
+            <p>
+              Si necesitas corregir una entrada, ampliar un término o coordinar una
+              revisión editorial, aquí está el punto de contacto del sitio.
+            </p>
+            <a class="text-link" href="contacto.html">Ir a contacto</a>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>
