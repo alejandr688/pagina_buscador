@@ -1,7 +1,9 @@
 (function () {
   const config = window.MEDEVIA_SHEET_CONFIG || {};
   const FALLBACK_CSV = window.MEDEVIA_FALLBACK_CSV || "";
-  const RESULT_LIMIT = 12;
+  const FALLBACK_DATA = Array.isArray(window.MEDEVIA_FALLBACK_DATA)
+    ? window.MEDEVIA_FALLBACK_DATA
+    : [];
   const ENTRY_ID_PATTERN = /^MEV-\d+$/i;
   const state = {
     dataset: [],
@@ -63,7 +65,7 @@
 
   async function loadDataset(elements) {
     let dataset = [];
-    let sourceLabel = "Copia local";
+    let sourceLabel = "Datos locales";
 
     try {
       if (config.gvizUrl) {
@@ -73,6 +75,11 @@
       }
     } catch (error) {
       dataset = [];
+    }
+
+    if (!dataset.length && FALLBACK_DATA.length) {
+      dataset = FALLBACK_DATA.map(normalizeEntryObject).filter(isRenderableEntry);
+      sourceLabel = "Copia local estructurada";
     }
 
     if (!dataset.length) {
@@ -233,6 +240,21 @@
     };
   }
 
+  function normalizeEntryObject(entry) {
+    return {
+      id: cleanValue(entry && entry.id),
+      nombre: cleanValue(entry && entry.nombre),
+      otrosNombres: cleanValue(entry && entry.otrosNombres),
+      queEs: cleanValue(entry && entry.queEs),
+      riesgos: cleanValue(entry && entry.riesgos),
+      conclusiones: cleanValue(entry && entry.conclusiones),
+      cantidadArticulos: cleanValue(entry && entry.cantidadArticulos),
+      cantidadRevisiones: cleanValue(entry && entry.cantidadRevisiones),
+      enlacePubMed: cleanValue(entry && entry.enlacePubMed),
+      anioReciente: cleanValue(entry && entry.anioReciente),
+    };
+  }
+
   function isRenderableEntry(entry) {
     if (!ENTRY_ID_PATTERN.test(entry.id)) {
       return false;
@@ -260,8 +282,7 @@
 
     state.filtered = filtered;
 
-    const visibleResults = filtered.slice(0, RESULT_LIMIT);
-    renderResults(elements, visibleResults, filtered.length, visibleQuery);
+    renderResults(elements, filtered, filtered.length, visibleQuery);
   }
 
   function matchesQuery(entry, query) {
@@ -294,7 +315,7 @@
       : "No se encontraron terapias con la búsqueda actual.";
 
     elements.meta.textContent = total
-      ? `Ordenado por año de revisión más reciente. Se muestran hasta ${RESULT_LIMIT} resultados.`
+      ? "Ordenado por año de revisión más reciente."
       : "Prueba con otro término para encontrar coincidencias.";
 
     elements.emptyState.hidden = total !== 0;
