@@ -1,6 +1,8 @@
 (function () {
   const config = window.MEDEVIA_SHEET_CONFIG || {};
   const FALLBACK_CSV = window.MEDEVIA_FALLBACK_CSV || "";
+  const RESULT_LIMIT = 12;
+  const ENTRY_ID_PATTERN = /^MEV-\d+$/i;
   const state = {
     dataset: [],
     filtered: [],
@@ -20,10 +22,6 @@
     const elements = {
       searchForm,
       searchInput: document.getElementById("search-input"),
-      minYear: document.getElementById("min-year"),
-      maxYear: document.getElementById("max-year"),
-      limit: document.getElementById("results-limit"),
-      clearButton: document.getElementById("clear-button"),
       resultsContainer: document.getElementById("results-container"),
       emptyState: document.getElementById("empty-state"),
       summary: document.getElementById("results-summary"),
@@ -60,16 +58,6 @@
 
     ["input", "change"].forEach((eventName) => {
       elements.searchInput.addEventListener(eventName, () => runSearch(elements));
-      elements.minYear.addEventListener(eventName, () => runSearch(elements));
-      elements.maxYear.addEventListener(eventName, () => runSearch(elements));
-      elements.limit.addEventListener(eventName, () => runSearch(elements));
-    });
-
-    elements.clearButton.addEventListener("click", () => {
-      elements.searchForm.reset();
-      elements.limit.value = "12";
-      runSearch(elements);
-      elements.searchInput.focus();
     });
   }
 
@@ -104,19 +92,21 @@
     }
 
     const rawText = await response.text();
-    const jsonPayload = rawText
-      .replace(/^[^(]+\(/, "")
-      .replace(/\);?\s*$/, "");
+    const jsonPayload = rawText.replace(/^[^(]+\(/, "").replace(/\);?\s*$/, "");
     const parsed = JSON.parse(jsonPayload);
     const table = parsed.table || {};
     const rows = table.rows || [];
     const headers = (table.cols || []).map((column) => (column.label || "").trim());
-
     const csvRows = [headers];
 
     rows.forEach((row) => {
       const values = (row.c || []).map((cell) => {
-        const value = cell && typeof cell.f === "string" ? cell.f : cell && cell.v !== null ? String(cell.v) : "";
+        const value =
+          cell && typeof cell.f === "string"
+            ? cell.f
+            : cell && cell.v !== null
+              ? String(cell.v)
+              : "";
         return escapeCsv(value);
       });
       csvRows.push(values);
@@ -141,9 +131,10 @@
     const rows = parseCsv(csvText);
     return rows
       .slice(1)
-      .filter((row) => row.some((cell) => normalizeText(cell)))
-      .map((row) => mapRowToEntry(normalizeRowColumns(row)))
-      .filter((entry) => entry.nombre);
+      .map(normalizeRowColumns)
+      .filter(Boolean)
+      .map(mapRowToEntry)
+      .filter(isRenderableEntry);
   }
 
   function parseCsv(text) {
@@ -187,71 +178,90 @@
     return rows;
   }
 
-  function mapRowToEntry(row) {
-    return {
-      id: cleanValue(row[0]),
-      nombre: cleanValue(row[1]),
-      otrosNombres: cleanValue(row[2]),
-      queEs: cleanValue(row[3]),
-      riesgos: cleanValue(row[4]),
-      conclusiones: cleanValue(row[5]),
-      cantidadArticulos: cleanValue(row[6]),
-      cantidadRevisiones: cleanValue(row[7]),
-      enlacePubMed: cleanValue(row[8]),
-      anioReciente: cleanValue(row[9]),
-    };
-  }
-
   function normalizeRowColumns(row) {
-    const cells = [...row];
+    const cells = row.map((cell) => cleanValue(cell));
+    const idIndex = cells.findIndex((cell) => ENTRY_ID_PATTERN.test(cell));
 
-    if (cells.length === 10) {
-      return cells;
+    if (idIndex === -1) {
+      return null;
     }
 
-    if (cells.length < 10) {
-      while (cells.length < 10) {
-        cells.push("");
+    const isolatedCells = cells.slice(idIndex);
+    const nextIdOffset = isolatedCells
+      .slice(1)
+      .findIndex((cell) => ENTRY_ID_PATTERN.test(cell));
+    const trimmed = nextIdOffset === -1 ? isolatedCells : isolatedCells.slice(0, nextIdOffset + 1);
+
+    if (trimmed.length === 10) {
+      return trimmed;
+    }
+
+    if (trimmed.length < 10) {
+      while (trimmed.length < 10) {
+        trimmed.push("");
       }
-      return cells;
+      return trimmed;
     }
 
     const fixed = new Array(10).fill("");
-    fixed[0] = cells[0] || "";
-    fixed[1] = cells[1] || "";
-    fixed[2] = cells[2] || "";
-    fixed[9] = cells[cells.length - 1] || "";
-    fixed[8] = cells[cells.length - 2] || "";
-    fixed[7] = cells[cells.length - 3] || "";
-    fixed[6] = cells[cells.length - 4] || "";
-    fixed[5] = cells[cells.length - 5] || "";
-    fixed[4] = cells[cells.length - 6] || "";
-    fixed[3] = cells.slice(3, cells.length - 6).join(", ");
+    fixed[0] = trimmed[0] || "";
+    fixed[1] = trimmed[1] || "";
+    fixed[2] = trimmed[2] || "";
+    fixed[9] = trimmed[trimmed.length - 1] || "";
+    fixed[8] = trimmed[trimmed.length - 2] || "";
+    fixed[7] = trimmed[trimmed.length - 3] || "";
+    fixed[6] = trimmed[trimmed.length - 4] || "";
+    fixed[5] = trimmed[trimmed.length - 5] || "";
+    fixed[4] = trimmed[trimmed.length - 6] || "";
+    fixed[3] = trimmed.slice(3, trimmed.length - 6).join(", ");
 
     return fixed;
   }
 
+  function mapRowToEntry(row) {
+    return {
+      id: cleanValue(row[0]),
+      nombre: cleanValue(stripEmbeddedRecordTrail(row[1])),
+      otrosNombres: cleanValue(stripEmbeddedRecordTrail(row[2])),
+      queEs: cleanValue(stripEmbeddedRecordTrail(row[3])),
+      riesgos: cleanValue(stripEmbeddedRecordTrail(row[4])),
+      conclusiones: cleanValue(stripEmbeddedRecordTrail(row[5])),
+      cantidadArticulos: cleanValue(stripEmbeddedRecordTrail(row[6])),
+      cantidadRevisiones: cleanValue(stripEmbeddedRecordTrail(row[7])),
+      enlacePubMed: cleanValue(stripEmbeddedRecordTrail(row[8])),
+      anioReciente: cleanValue(stripEmbeddedRecordTrail(row[9])),
+    };
+  }
+
+  function isRenderableEntry(entry) {
+    if (!ENTRY_ID_PATTERN.test(entry.id)) {
+      return false;
+    }
+
+    if (!entry.nombre || !/[a-z]/i.test(normalizeText(entry.nombre))) {
+      return false;
+    }
+
+    return true;
+  }
+
   function cleanValue(value) {
-    return String(value || "")
-      .replace(/\s+/g, " ")
-      .trim();
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function stripEmbeddedRecordTrail(value) {
+    return String(value || "").replace(/\s*MEV-\d{3},[\s\S]*$/i, "").trim();
   }
 
   function runSearch(elements) {
     const query = normalizeText(elements.searchInput.value);
-    const minYear = parseInteger(elements.minYear.value);
-    const maxYear = parseInteger(elements.maxYear.value);
-    const limit = parseInteger(elements.limit.value) || 12;
-
-    const filtered = state.dataset
-      .filter((entry) => matchesQuery(entry, query))
-      .filter((entry) => matchesYearRange(entry, minYear, maxYear))
-      .sort(compareEntries);
+    const visibleQuery = cleanValue(elements.searchInput.value);
+    const filtered = state.dataset.filter((entry) => matchesQuery(entry, query)).sort(compareEntries);
 
     state.filtered = filtered;
 
-    const visibleResults = filtered.slice(0, limit);
-    renderResults(elements, visibleResults, filtered.length, limit, query, minYear, maxYear);
+    const visibleResults = filtered.slice(0, RESULT_LIMIT);
+    renderResults(elements, visibleResults, filtered.length, visibleQuery);
   }
 
   function matchesQuery(entry, query) {
@@ -261,27 +271,6 @@
 
     const haystack = normalizeText([entry.nombre, entry.otrosNombres, entry.queEs].join(" "));
     return haystack.includes(query);
-  }
-
-  function matchesYearRange(entry, minYear, maxYear) {
-    if (!minYear && !maxYear) {
-      return true;
-    }
-
-    const year = extractYear(entry.anioReciente);
-    if (!year) {
-      return false;
-    }
-
-    if (minYear && year < minYear) {
-      return false;
-    }
-
-    if (maxYear && year > maxYear) {
-      return false;
-    }
-
-    return true;
   }
 
   function compareEntries(a, b) {
@@ -295,24 +284,18 @@
     return a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" });
   }
 
-  function renderResults(elements, visibleResults, total, limit, query, minYear, maxYear) {
+  function renderResults(elements, visibleResults, total, queryLabel) {
     elements.resultsContainer.innerHTML = visibleResults.map(createResultCard).join("");
 
-    const filtersLabel = [
-      query ? `consulta "${query}"` : "",
-      minYear ? `desde ${minYear}` : "",
-      maxYear ? `hasta ${maxYear}` : "",
-    ]
-      .filter(Boolean)
-      .join(" · ");
+    const querySuffix = queryLabel ? ` para "${queryLabel}"` : "";
 
     elements.summary.textContent = total
-      ? `Mostrando ${visibleResults.length} de ${total} terapias${filtersLabel ? ` para ${filtersLabel}` : ""}.`
-      : "No se encontraron terapias con los filtros actuales.";
+      ? `Mostrando ${visibleResults.length} de ${total} terapias${querySuffix}.`
+      : "No se encontraron terapias con la búsqueda actual.";
 
     elements.meta.textContent = total
-      ? `Ordenado por año de revisión más reciente. Límite visual activo: ${limit} resultados.`
-      : "Prueba con otro término o amplía el rango de años.";
+      ? `Ordenado por año de revisión más reciente. Se muestran hasta ${RESULT_LIMIT} resultados.`
+      : "Prueba con otro término para encontrar coincidencias.";
 
     elements.emptyState.hidden = total !== 0;
   }
@@ -429,16 +412,6 @@
 
     const matches = cleaned.match(/https?:\/\/[^\s]+/gi) || [];
     return matches.map((link) => link.replace(/[),.;]+$/g, ""));
-  }
-
-  function parseInteger(value) {
-    const stringValue = String(value || "").trim();
-    if (!stringValue) {
-      return null;
-    }
-
-    const parsed = Number.parseInt(stringValue, 10);
-    return Number.isFinite(parsed) ? parsed : null;
   }
 
   function normalizeText(value) {

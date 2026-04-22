@@ -44,7 +44,8 @@
           <div class="section-heading">
             <h2 id="buscador-titulo">Buscador principal</h2>
             <p>
-              Busca por nombre, otros nombres o por la descripción breve de cada terapia.
+              Busca por nombre, otros nombres o por la descripción breve de cada
+              terapia.
             </p>
           </div>
 
@@ -65,42 +66,16 @@
                 id="search-input"
                 name="query"
                 type="search"
-                placeholder='Ej. "acupuntura", "fitoterapia", "dolor" o "ansiedad"'
               />
             </label>
 
             <div class="search-actions">
               <button type="submit" class="button button--primary">Buscar</button>
-              <button type="button" id="clear-button" class="button button--ghost">
-                Limpiar
-              </button>
-            </div>
-
-            <div class="filters-grid">
-              <label class="filter-card" for="min-year">
-                <span class="filter-card__label">Año mínimo</span>
-                <input id="min-year" name="minYear" type="number" inputmode="numeric" placeholder="Ej. 2018" />
-              </label>
-
-              <label class="filter-card" for="max-year">
-                <span class="filter-card__label">Año máximo</span>
-                <input id="max-year" name="maxYear" type="number" inputmode="numeric" placeholder="Ej. 2026" />
-              </label>
-
-              <label class="filter-card" for="results-limit">
-                <span class="filter-card__label">Resultados por página</span>
-                <select id="results-limit" name="limit">
-                  <option value="6">6</option>
-                  <option value="12" selected>12</option>
-                  <option value="24">24</option>
-                  <option value="48">48</option>
-                </select>
-              </label>
             </div>
           </form>
 
           <div class="search-status" role="status" aria-live="polite">
-            <p id="results-summary">Cargando base de datos…</p>
+            <p id="results-summary">Cargando base de datos...</p>
             <span id="data-source-badge" class="source-badge">Preparando fuente</span>
           </div>
         </section>
@@ -114,7 +89,7 @@
           <div id="results-container" class="results-grid"></div>
           <div id="empty-state" class="empty-state" hidden>
             <h3>Sin coincidencias</h3>
-            <p>Prueba con otro término o ajusta el rango de años.</p>
+            <p>Prueba con otro término de búsqueda.</p>
           </div>
         </section>
 
